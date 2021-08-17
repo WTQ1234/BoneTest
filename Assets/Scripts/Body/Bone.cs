@@ -16,4 +16,15 @@ public class Bone : MonoBehaviour
     public Bone preBone;
     [Header("下一骨骼")]
     public Bone nextBone;
+
+    public void onInit(Limb _parentLimb, Bone _preBone)
+    {
+        parentLimb = _parentLimb;
+        preBone = _preBone;
+    }
+
+    public void onSetNextBone(Bone _nextBone)
+    {
+        nextBone = _nextBone;
+    }
 }

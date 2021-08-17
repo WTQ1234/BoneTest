@@ -1,13 +1,15 @@
 ﻿// 生成立方体、球体和胶囊体，做了特殊处理，清除了其中的碰撞体，改为简易碰撞体
+// 以Y轴为基准，即x和z两轴会置于中心，y轴会置于底部
 // https://zhuanlan.zhihu.com/p/90104885
 using UnityEngine;
-// using UnityEngine.
-// [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
+
+[RequireComponent(typeof(MeshFilter), typeof(SkinnedMeshRenderer))]
 public class RoundedCube : MonoBehaviour {
 
 	public int xSize, ySize, zSize;
-	// 要生成完全的球面，roundness需等于xyzsize的一半
-	public int roundness;
+	public Vector3 offset;
+	public int extraSize = 2;	// 数值大了直接卡死
+	public int roundness;	// 要生成完全的球面，roundness需等于x y z size的一半
 
 	private Mesh mesh;
 	private Vector3[] vertices;
@@ -15,6 +17,11 @@ public class RoundedCube : MonoBehaviour {
 	private Color32[] cubeUV;
 
 	private void Awake () {
+		xSize *= extraSize;
+		ySize *= extraSize;
+		zSize *= extraSize;
+		roundness *= extraSize;
+		transform.localScale /= extraSize;
 		Generate();
 	}
 
@@ -37,6 +44,7 @@ public class RoundedCube : MonoBehaviour {
 			(xSize - 1) * (zSize - 1) +
 			(ySize - 1) * (zSize - 1)) * 2;
 		vertices = new Vector3[cornerVertices + edgeVertices + faceVertices];
+		print("======" + vertices.Length);
 		normals = new Vector3[vertices.Length];
 		cubeUV = new Color32[vertices.Length];
 
@@ -71,7 +79,7 @@ public class RoundedCube : MonoBehaviour {
 		mesh.colors32 = cubeUV;
 	}
 
-	private void SetVertex (int i, int x, int y, int z) {
+	private void SetVertex (int i, float x, float y, float z) {
 		Vector3 inner = vertices[i] = new Vector3(x, y, z);
 
 		// 实现圆角，没有添加新的点，只是将原本的点压进去了
@@ -95,10 +103,9 @@ public class RoundedCube : MonoBehaviour {
 		else if (z > zSize - roundness) {
 			inner.z = zSize - roundness;
 		}
-
 		// 内点与外点之间的方向向量，内点+方向乘以半径（即圆度），就得到应在的圆角外点
 		normals[i] = (vertices[i] - inner).normalized;
-		vertices[i] = inner + normals[i] * roundness;
+		vertices[i] = inner + normals[i] * roundness + offset;
 		cubeUV[i] = new Color32((byte)x, (byte)y, (byte)z, 0);
 	}
 

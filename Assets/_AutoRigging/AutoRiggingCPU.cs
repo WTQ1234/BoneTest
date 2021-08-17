@@ -4,22 +4,27 @@ using UnityEngine;
 
 public class AutoRiggingCPU : MonoBehaviour
 {
+    public Limb limb;
+
     public int boneNum = 4;
     public Vector3 boneDirection;
     public float boneLength = 0.3f;
 
+    public Bone prefab_bone;
+
     Mesh mesh;
     SkinnedMeshRenderer skin;
 
-    Transform[] bones;
+    Bone[] bones;
+    Transform[] bones_tran;
     Matrix4x4[] bindPoses;
     public float spread = 0.1f;
 
-
     void Start()
     {
-        bones = new Transform[boneNum];
+        bones_tran = new Transform[boneNum];
         bindPoses = new Matrix4x4[boneNum];
+        bones = new Bone[boneNum];
     }
 
     void Update()
@@ -27,6 +32,7 @@ public class AutoRiggingCPU : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.G))
         {
             Generate();
+            limb.OnSetBezier();
             Debug.Log("count:" + mesh.vertexCount);
         }
     }
@@ -45,7 +51,7 @@ public class AutoRiggingCPU : MonoBehaviour
                 Vector2 tempDist = new Vector2();
                 tempDist.x = j;
                 // 考虑到缩放比率，要除以一个系数
-                tempDist.y = Vector3.Distance(mesh.vertices[i] * transform.localScale.x + transform.position, bones[j].position);
+                tempDist.y = Vector3.Distance(mesh.vertices[i] * transform.localScale.x + transform.position, bones[j].transform.position);
                 distList.Add(tempDist);
             }
             distList.Sort((a, b) => a.y.CompareTo(b.y)); // 基于 y 从小到大排序
@@ -97,31 +103,45 @@ public class AutoRiggingCPU : MonoBehaviour
 
             }
         }
+        
         mesh.boneWeights = weights;
         mesh.bindposes = bindPoses;
-        skin.bones = bones;
+        skin.bones = bones_tran;
         skin.sharedMesh = mesh;
+        return;
     }
 
     public void Generate()
     {
         for (int i = 0; i < boneNum; i++)
         {
-            bones[i] = new GameObject("Bone" + i).transform;
-            if (i == 0)
-                bones[i].parent = transform;
-            else
-                bones[i].parent = bones[i - 1];
+            Bone bone = GameObject.Instantiate<Bone>(prefab_bone);
+            Transform trans = bone.transform;
+            bones[i] = bone;
+            bones_tran[i] = trans;
 
-            bones[i].localRotation = Quaternion.identity;
+            limb.OnAddBone(bone);
+            trans.name = "Bone" + i;
+            if (i == 0)
+            {
+                trans.parent = transform;
+                bone.onInit(limb, null);
+            }
+            else
+            {
+                trans.parent = bones[i - 1].transform;
+                bone.onInit(limb, bones[i - 1]);
+            }
+
+            trans.localRotation = Quaternion.identity;
 
             // 保证起始的端点在 mesh 的坐标零点
             if (i == 0)
-                bones[i].localPosition = Vector3.zero;
+                trans.localPosition = Vector3.zero;
             else
-                bones[i].localPosition = boneDirection.normalized * boneLength;
+                trans.localPosition = boneDirection.normalized * boneLength;
 
-            bindPoses[i] = bones[i].worldToLocalMatrix * transform.localToWorldMatrix;
+            bindPoses[i] = trans.worldToLocalMatrix * transform.localToWorldMatrix;
         }
         mesh = transform.GetComponent<MeshFilter>().mesh;
         skin = transform.GetComponent<SkinnedMeshRenderer>();
