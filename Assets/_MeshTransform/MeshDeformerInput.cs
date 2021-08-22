@@ -8,7 +8,6 @@ public class MeshDeformerInput : MonoBehaviour {
 	void Update () {
 		if (Input.GetMouseButton(0)) {
 			HandleInput();
-			print("1111");
 		}
 	}
 

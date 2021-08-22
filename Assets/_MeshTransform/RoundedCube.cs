@@ -6,10 +6,11 @@ using UnityEngine;
 [RequireComponent(typeof(MeshFilter), typeof(SkinnedMeshRenderer))]
 public class RoundedCube : MonoBehaviour {
 
-	public int xSize, ySize, zSize;
-	public Vector3 offset;
+	public int length, round;
 	public int extraSize = 2;	// 数值大了直接卡死
-	public int roundness;	// 要生成完全的球面，roundness需等于x y z size的一半
+	private int xSize, ySize, zSize;
+	private Vector3 offset;
+	private int roundness;	// 要生成完全的球面，roundness需等于x y z size的一半
 
 	private Mesh mesh;
 	private Vector3[] vertices;
@@ -17,12 +18,26 @@ public class RoundedCube : MonoBehaviour {
 	private Color32[] cubeUV;
 
 	private void Awake () {
+		xSize = zSize = round;
+		ySize = length;
 		xSize *= extraSize;
 		ySize *= extraSize;
 		zSize *= extraSize;
-		roundness *= extraSize;
 		transform.localScale /= extraSize;
+		roundness = xSize / 2;
+		offset = new Vector3(xSize * -0.5f, 0, zSize * -0.5f);
 		Generate();
+	}
+
+	void Update()
+	{
+		if (Input.GetKeyDown(KeyCode.F))
+		{
+			Vector3 scale = transform.localScale;
+			scale.y *= (float)round / (float)length;
+			transform.localScale = scale;
+			Debug.Log("count:" + mesh.vertexCount);
+		}
 	}
 
 	private void Generate () {
